@@ -5,17 +5,11 @@ import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { getAllCategories, Category } from '@/lib/firestore';
 import {
   Save, ArrowLeft, Loader2, AlertCircle, CheckCircle,
   Lock, Unlock, Plus, Info, Upload, FileArchive, X,
 } from 'lucide-react';
-
-const TRACKS = [
-  { id: 'networking', name: 'Networking' },
-  { id: 'linux',      name: 'Linux'       },
-  { id: 'pentesting', name: 'Pentesting'  },
-  { id: 'web',        name: 'Web'         },
-];
 
 const Field = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
   <div>
@@ -44,6 +38,7 @@ export default function AdminAddLabPage() {
   const [checkingId,   setCheckingId]   = useState(false);
   const [hints,        setHints]        = useState<string[]>(['']);
   const [labShortName, setLabShortName] = useState('');
+  const [categories,   setCategories]   = useState<Category[]>([]);
 
   // File upload state
   const [selectedFile,   setSelectedFile]   = useState<File | null>(null);
@@ -58,7 +53,7 @@ export default function AdminAddLabPage() {
     description:     '',
     descriptionAr:   '',
     difficulty:      'easy' as 'easy' | 'medium' | 'hard',
-    track:           'web'  as 'networking' | 'linux' | 'pentesting' | 'web',
+    track:           '' as string,
     topic:           '',
     topicAr:         '',
     flag:            '',
@@ -93,7 +88,12 @@ export default function AdminAddLabPage() {
       if (currentUser) {
         const admin = await checkAdminStatus(currentUser.email || '');
         setIsAdmin(admin);
-        if (!admin) router.push('/labs');
+        if (!admin) { router.push('/labs'); return; }
+        // Load categories from Firestore
+        const cats = await getAllCategories();
+        cats.sort((a, b) => a.name.localeCompare(b.name));
+        setCategories(cats);
+        if (cats.length > 0) setFormData(prev => ({ ...prev, track: cats[0].id }));
       } else { router.push('/auth/signin'); }
       setLoading(false);
     });
@@ -274,7 +274,7 @@ export default function AdminAddLabPage() {
             <div className="grid grid-cols-2 gap-4">
               <Field label="Track" required>
                 <select value={formData.track} onChange={e => setFormData({ ...formData, track: e.target.value as any })} className={inputCls}>
-                  {TRACKS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  {categories.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </Field>
               <Field label="Topic (EN)" required>
