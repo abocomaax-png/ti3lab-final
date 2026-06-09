@@ -193,7 +193,11 @@ export default function AdminAddLabPage() {
       setUploadProgress(90);
 
       const result = await uploadRes.json();
-      const downloadUrl = result.content.download_url;
+      const downloadUrl = result?.content?.download_url;
+
+      if (!downloadUrl || typeof downloadUrl !== 'string' || !downloadUrl.startsWith('http')) {
+        throw new Error('GitHub did not return a valid download URL. Check your NEXT_PUBLIC_GITHUB_TOKEN and repo name.');
+      }
 
       setUploadedUrl(downloadUrl);
       setUploadProgress(null);
@@ -411,9 +415,43 @@ export default function AdminAddLabPage() {
             )}
 
             {uploadError && (
-              <p className="text-red-400 text-xs flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5" /> {uploadError}
-              </p>
+              <div className="mt-1">
+                <p className="text-red-400 text-xs flex items-center gap-1.5 mb-2">
+                  <AlertCircle className="w-3.5 h-3.5" /> {uploadError}
+                </p>
+                <p className="text-xs text-gray-600">أو أدخل الرابط يدوياً أدناه 👇</p>
+              </div>
+            )}
+
+            {/* Manual URL fallback */}
+            {!uploadedUrl && (
+              <div className="mt-3">
+                <label className="block text-xs text-gray-500 mb-1.5">أو أدخل رابط التحميل المباشر يدوياً</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="https://raw.githubusercontent.com/... أو أي رابط مباشر"
+                    className="flex-1 bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-gray-500 font-mono"
+                    onBlur={e => {
+                      const val = e.target.value.trim();
+                      if (val && val.startsWith('http')) {
+                        setUploadedUrl(val);
+                        setUploadError('');
+                      }
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && val.startsWith('http')) {
+                          setUploadedUrl(val);
+                          setUploadError('');
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-700 mt-1">اضغط Enter أو انقر خارج الحقل لتأكيد الرابط</p>
+              </div>
             )}
           </div>
 
