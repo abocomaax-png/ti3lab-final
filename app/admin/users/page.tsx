@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs, doc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
-import { User, setUserActivation } from '@/lib/firestore';
+import { User } from '@/lib/firestore';
 import {
   Users as UsersIcon, Search, Loader2, Award, Trash2, Edit,
-  Plus, Minus, AlertCircle, ArrowLeft, Shield, X, Save,
-  CheckCircle, XCircle, ToggleLeft, ToggleRight
+  Plus, Minus, AlertCircle, ArrowLeft, Shield, X, Save
 } from 'lucide-react';
 
 export default function AdminUsersPage() {
@@ -20,7 +19,6 @@ export default function AdminUsersPage() {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ displayName: '', points: 0, pointsToAdd: 0 });
@@ -76,16 +74,6 @@ export default function AdminUsersPage() {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const handleToggleActivation = async (u: User) => {
-    setTogglingId(u.uid);
-    try {
-      await setUserActivation(u.uid, !u.isActivated);
-      setUsers(users.map(x => x.uid === u.uid ? { ...x, isActivated: !x.isActivated } : x));
-      showMsg('success', `${u.displayName} — ${!u.isActivated ? 'تم التفعيل ✓' : 'تم إلغاء التفعيل'}`);
-    } catch { showMsg('error', 'فشل تغيير حالة التفعيل'); }
-    finally { setTogglingId(null); }
-  };
-
   const handleDelete = async (userId: string, userEmail: string) => {
     if (!confirm(`Are you sure you want to delete ${userEmail}?`)) return;
     setDeletingId(userId);
@@ -129,7 +117,6 @@ export default function AdminUsersPage() {
 
   const stats = {
     total: users.length,
-    activated: users.filter(u => u.isActivated).length,
     totalSolved: users.reduce((s, u) => s + (u.solvedLabs?.length || 0), 0),
     avgPoints: users.length > 0 ? Math.round(users.reduce((s, u) => s + u.points, 0) / users.length) : 0,
   };
@@ -145,14 +132,13 @@ export default function AdminUsersPage() {
             <span>Back to Admin</span>
           </button>
           <h1 className="text-4xl font-bold mb-2"><span className="gradient-text">Manage Users</span></h1>
-          <p className="text-gray-400">تفعيل وإدارة حسابات الطلاب</p>
+          <p className="text-gray-400">إدارة حسابات الطلاب والنقاط</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Total Users', value: stats.total, icon: UsersIcon, color: 'text-primary', border: 'border-primary/30' },
-            { label: 'Activated', value: stats.activated, icon: CheckCircle, color: 'text-green-500', border: 'border-green-500/30' },
             { label: 'Total Solves', value: stats.totalSolved, icon: Shield, color: 'text-yellow-500', border: 'border-yellow-500/30' },
             { label: 'Avg Points', value: stats.avgPoints, icon: Award, color: 'text-blue-500', border: 'border-blue-500/30' },
           ].map(s => (
@@ -198,7 +184,6 @@ export default function AdminUsersPage() {
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">User</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Email</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Status</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Points</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Solved</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">Quick Pts</th>
@@ -217,21 +202,6 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-300">{u.email}</td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleToggleActivation(u)}
-                          disabled={togglingId === u.uid}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${u.isActivated ? 'bg-green-500/20 text-green-400 border border-green-500/40 hover:bg-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30'}`}
-                        >
-                          {togglingId === u.uid ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : u.isActivated ? (
-                            <><ToggleRight className="w-3 h-3" /> مفعّل</>
-                          ) : (
-                            <><ToggleLeft className="w-3 h-3" /> غير مفعّل</>
-                          )}
-                        </button>
-                      </td>
                       <td className="px-6 py-4">
                         <span className="text-primary font-semibold">{u.points}</span>
                       </td>
