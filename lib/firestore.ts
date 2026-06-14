@@ -66,7 +66,7 @@ export async function createUserProfile(uid: string, email: string, displayName:
     points: 0,
     solvedLabs: [],
     createdAt: Timestamp.now(),
-    isActivated: false,
+    isActivated: true,
   };
   await setDoc(userRef, userData);
   return userData;
@@ -91,10 +91,6 @@ export async function updateUserPoints(uid: string, points: number) {
 
 export async function addSolvedLab(uid: string, labId: string) {
   await updateDoc(doc(db, 'users', uid), { solvedLabs: arrayUnion(labId) });
-}
-
-export async function setUserActivation(uid: string, isActivated: boolean) {
-  await updateDoc(doc(db, 'users', uid), { isActivated });
 }
 
 // Lab Functions
@@ -164,4 +160,3 @@ export async function getAllCategories(): Promise<Category[]> {
   const snap = await getDocs(collection(db, 'categories'));
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Category));
 }
-
