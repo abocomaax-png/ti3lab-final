@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getAllLabs, getAllCategories, getUserProfile, Lab, User, Category } from '@/lib/firestore';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { Network, Terminal, Target, Globe, Tag, Shield as ShieldIcon, ChevronDown, ChevronRight, Lock, CheckCircle, Loader2, Shield, AlertCircle } from 'lucide-react';
+import { Network, Terminal, Target, Globe, Tag, Shield as ShieldIcon, ChevronDown, ChevronRight, Lock, CheckCircle, Loader2, Shield } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
   network: Network,
@@ -45,7 +45,6 @@ export default function LabsPage() {
   const [loading, setLoading] = useState(true);
   const [openTracks, setOpenTracks] = useState<Record<string, boolean>>({ web: true });
   const [openTopics, setOpenTopics] = useState<Record<string, boolean>>({});
-  const [notActivated, setNotActivated] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
@@ -57,7 +56,6 @@ export default function LabsPage() {
           getAllCategories(),
         ]);
         setUserProfile(profile);
-        if (profile && !profile.isActivated) setNotActivated(true);
         setLabs(allLabs);
         setCategories(allCats);
       } catch (e) { console.error(e); }
@@ -95,15 +93,6 @@ export default function LabsPage() {
           <p className="text-gray-500 text-sm">اختر التراك وابدأ التدريب</p>
         </div>
 
-        {notActivated && (
-          <div className="mb-8 p-4 bg-amber-500/6 border border-amber-500/20 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-amber-400 font-medium text-sm">الحساب لم يُفعَّل بعد</p>
-              <p className="text-amber-400/60 text-xs mt-0.5">بعد الانضمام للكورس، الأدمن هيفعّل حسابك وتقدر تدخل اللابات.</p>
-            </div>
-          </div>
-        )}
 
         <div className="space-y-3">
           {/* Render Firestore categories */}
@@ -167,7 +156,7 @@ export default function LabsPage() {
                               <div className="px-6 pb-3 space-y-1.5">
                                 {topicLabs.map(lab => {
                                   const isSolved = userProfile?.solvedLabs.includes(lab.id);
-                                  const isLocked = lab.isLocked || notActivated;
+                                  const isLocked = lab.isLocked;
 
                                   return (
                                     <div
@@ -271,7 +260,7 @@ export default function LabsPage() {
                             <div className="px-6 pb-3 space-y-1.5">
                               {topicLabs.map(lab => {
                                 const isSolved = userProfile?.solvedLabs.includes(lab.id);
-                                const isLocked = lab.isLocked || notActivated;
+                                const isLocked = lab.isLocked;
                                 return (
                                   <div
                                     key={lab.id}
